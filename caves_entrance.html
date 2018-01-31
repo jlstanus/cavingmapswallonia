@@ -29,9 +29,10 @@
 
       var styleCache = {
         'Cavité': new ol.style.Style({
-            image: new ol.style.Icon(/** @type {olx.style.IconOptions} */ ({
-              src: 'https://wiki.openstreetmap.org/w/images/thumb/b/b1/Cave.14.svg/14px-Cave.14.svg.png'
-            })),
+           stroke: new ol.style.Stroke({
+              color: '#ffcc33',
+              width: 2
+            })
         })
       };
 

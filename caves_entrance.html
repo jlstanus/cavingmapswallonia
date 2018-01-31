@@ -2,7 +2,7 @@
 <html>
   <head>
   	<meta charset="utf-8" />
-    <title>ArcGIS REST Feature Service</title>
+    <title>Caving Maps</title>
     <link rel="stylesheet" href="https://openlayers.org/en/v4.6.4/css/ol.css" type="text/css">
     <!-- The line below is only needed for old environments like Internet Explorer and Android 4.x -->
     <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList,URL"></script>
@@ -17,8 +17,6 @@
     <script>
       var caveEntranceLonLat = [4.908278 ,50.224674];  
       var caveEntranceLonLatMercator = ol.proj.fromLonLat(caveEntranceLonLat);
-      var lambert72 = ol.proj.get('EPSG:31370');
-      var webMercator = ol.proj.get('EPSG:3857');
       var serviceUrl = 'http://geoservices.wallonie.be/arcgis/rest/services/' +
           'SOL_SOUS_SOL/KARST/MapServer/';
       var layer = '4';
@@ -66,7 +64,7 @@
         source: vectorSource,
         projection : webMercator,
         style: function(feature) {
-          var classify = feature.get('OBJECTID');
+          var classify = feature.get('PHENO_DESC');
           return styleCache[classify];
         }
       });

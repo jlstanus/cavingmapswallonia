@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  	<meta charset="utf-8" />
+    <title>ArcGIS REST Feature Service</title>
+    <link rel="stylesheet" href="https://openlayers.org/en/v4.6.4/css/ol.css" type="text/css">
+    <!-- The line below is only needed for old environments like Internet Explorer and Android 4.x -->
+    <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList,URL"></script>
+    <script src="https://openlayers.org/en/v4.6.4/build/ol.js"></script>
+    <script src="https://code.jquery.com/jquery-2.2.3.min.js"></script>
+    <!-- https://openlayers.org/en/latest/examples/vector-esri.html -->
+    <!-- http://geoportail.wallonie.be/catalogue/ad5bc4d6-0c9e-4b4d-b606-2cba58ea55b2.html -->
+  </head>
+  <body>
+    <div id="map" class="map"></div>
+    <div id="info">&nbsp;</div>
+    <script>
+      var caveEntranceLonLat = [4.908278 ,50.224674];  
+      var caveEntranceLonLatMercator = ol.proj.fromLonLat(caveEntranceLonLat);
+      var lambert72 = ol.proj.get('EPSG:31370');
+      var webMercator = ol.proj.get('EPSG:3857');
+      var serviceUrl = 'http://geoservices.wallonie.be/arcgis/rest/services/' +
+          'SOL_SOUS_SOL/KARST/MapServer/';
+      var layer = '4';
+
+      var esrijsonFormat = new ol.format.EsriJSON();
+
+      var styleCache = {
+        'Cavité': new ol.style.Style({
+            image: new ol.style.Icon(/** @type {olx.style.IconOptions} */ ({
+              src: 'https://wiki.openstreetmap.org/w/images/thumb/b/b1/Cave.14.svg/14px-Cave.14.svg.png'
+            })),
+        })
+      };
+
+      var vectorSource = new ol.source.Vector({
+        loader: function(extent, resolution, projection) {
+          var url = serviceUrl + layer + '/query/?f=json&' +
+              'returnGeometry=true&spatialRel=esriSpatialRelIntersects&geometry=' +
+              encodeURIComponent('{"xmin":' + extent[0] + ',"ymin":' +
+                  extent[1] + ',"xmax":' + extent[2] + ',"ymax":' + extent[3] +
+                  ',"spatialReference":{"wkid":31370}}') +
+              '&geometryType=esriGeometryEnvelope&inSR=31370&outFields=*' +
+              '&outSR=31370';
+          $.ajax({url: url, dataType: 'jsonp', success: function(response) {
+            if (response.error) {
+              alert(response.error.message + '\n' +
+                  response.error.details.join('\n'));
+            } else {
+              // dataProjection will be read from document
+              var features = esrijsonFormat.readFeatures(response, {
+                featureProjection: projection
+              });
+              if (features.length > 0) {
+                vectorSource.addFeatures(features);
+              }
+            }
+          }});
+        },
+        strategy: ol.loadingstrategy.tile(ol.tilegrid.createXYZ({
+          tileSize: 512
+        }))
+      });
+
+      var vector = new ol.layer.Vector({
+        source: vectorSource,
+        projection : webMercator,
+        style: function(feature) {
+          var classify = feature.get('OBJECTID');
+          return styleCache[classify];
+        }
+      });
+
+      var raster = new ol.layer.Tile({
+            source: new ol.source.XYZ({
+              url: 'https://{a-c}.tile.thunderforest.com/outdoors/{z}/{x}/{y}.png' +
+                  '?apikey=ADD YOUR KEY'
+                          })
+      });
+
+      var map = new ol.Map({
+        layers: [raster, vector],
+        target: document.getElementById('map'),
+        view: new ol.View({
+          center: caveEntranceLonLatMercator,
+          zoom: 16
+        })
+      });
+
+      var displayFeatureInfo = function(pixel) {
+        var features = [];
+        map.forEachFeatureAtPixel(pixel, function(feature) {
+          features.push(feature);
+        });
+        if (features.length > 0) {
+          var info = [];
+          var i, ii;
+          for (i = 0, ii = features.length; i < ii; ++i) {
+            info.push(features[i].get('DENOM'));
+          }
+          document.getElementById('info').innerHTML = info.join(', ') || '(unknown)';
+          map.getTarget().style.cursor = 'pointer';
+        } else {
+          document.getElementById('info').innerHTML = '&nbsp;';
+          map.getTarget().style.cursor = '';
+        }
+      };
+
+      map.on('pointermove', function(evt) {
+        if (evt.dragging) {
+          return;
+        }
+        var pixel = map.getEventPixel(evt.originalEvent);
+        displayFeatureInfo(pixel);
+      });
+
+      map.on('click', function(evt) {
+        displayFeatureInfo(evt.pixel);
+      });
+    </script>
+  </body>
+</html>

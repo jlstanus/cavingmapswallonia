@@ -24,17 +24,41 @@
       var serviceUrl = 'http://geoservices.wallonie.be/arcgis/rest/services/' +
           'SOL_SOUS_SOL/KARST/MapServer/';
       var layer = '4';
-
       var esrijsonFormat = new ol.format.EsriJSON();
 
-      var styleCache = {
-        'Cavité': new ol.style.Style({
+      var labelStyle = new ol.style.Style({
+        geometry: function(feature) {
+          var geometry = feature.getGeometry();
+          if (geometry.getType() == 'MultiLineString') {
+            // Only render label for the widest polygon of a multipolygon
+            var polygons = geometry.getLineStrings();
+            var widest = 0;
+            for (var i = 0, ii = polygons.length; i < ii; ++i) {
+              var polygon = polygons[i];
+              var width = ol.extent.getWidth(polygon.getExtent());
+              if (width > widest) {
+                widest = width;
+                geometry = polygon;
+              }
+            }
+          }
+          return geometry;
+        },
+        text : new ol.style.Text({
+          font: '12px Calibri,sans-serif',
+          fill: new ol.style.Fill({color: '#000'}),
+          stroke: new ol.style.Stroke({color: '#fff', width: 3}),
+          overflow: true
+        })
+      });
+
+      var geomStyle = new ol.style.Style({
             stroke: new ol.style.Stroke({
               color: '#ffcc33',
               width: 2
             })
-          })
-      };
+          });
+  
 
       var vectorSource = new ol.source.Vector({
         loader: function(extent, resolution, projection) {
@@ -46,7 +70,7 @@
                   ',"spatialReference":{"wkid":31370}}') +
               '&geometryType=esriGeometryEnvelope&inSR=31370&outFields=*' +
               '&outSR=31370';
-          $.ajax({url: url, dataType: 'jsonp', success: function(response) {
+          jQuery.ajax({url: url, dataType: 'jsonp', success: function(response) {
             if (response.error) {
               alert(response.error.message + '\n' +
                   response.error.details.join('\n'));
@@ -66,21 +90,23 @@
         }))
       });
 
-      var vector = new ol.layer.Vector({
+      var styles = [geomStyle, labelStyle];
+
+           var vector = new ol.layer.Vector({
         source: vectorSource,
         style: function(feature) {
-          var classify = feature.get('PHENO_DESC');
-          return styleCache[classify];
-        }
+          labelStyle.getText().setText(feature.get('QUALIF') +' '+feature.get('DENOM'));
+          return styles;
+        },
+        declutter: true
       });
-
+      
       var raster = new ol.layer.Tile({
             source: new ol.source.XYZ({
               url: 'https://{a-c}.tile.thunderforest.com/outdoors/{z}/{x}/{y}.png' +
                   '?apikey=4264c25de89a48e1a3fbcdb1533d89c0'
                           })
       });
-
       var map = new ol.Map({
         layers: [raster, vector],
         target: document.getElementById('map'),
@@ -89,7 +115,6 @@
           zoom: 16
         })
       });
-
       var displayFeatureInfo = function(pixel) {
         var features = [];
         map.forEachFeatureAtPixel(pixel, function(feature) {
@@ -99,7 +124,7 @@
           var info = [];
           var i, ii;
           for (i = 0, ii = features.length; i < ii; ++i) {
-            info.push(features[i].get('DENOM'));
+            info.push(features[i].get('DESCRIPTION'));
           }
           document.getElementById('info').innerHTML = info.join(', ') || '(unknown)';
           map.getTarget().style.cursor = 'pointer';
@@ -108,7 +133,6 @@
           map.getTarget().style.cursor = '';
         }
       };
-
       map.on('pointermove', function(evt) {
         if (evt.dragging) {
           return;
@@ -116,11 +140,9 @@
         var pixel = map.getEventPixel(evt.originalEvent);
         displayFeatureInfo(pixel);
       });
-
       map.on('click', function(evt) {
         displayFeatureInfo(evt.pixel);
       });
     </script>
   </body>
 </html>
-

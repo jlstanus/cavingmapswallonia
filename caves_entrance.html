@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <meta charset="utf-8" />
+  	<meta charset="utf-8" />
     <title>ArcGIS REST Feature Service</title>
     <link rel="stylesheet" href="https://openlayers.org/en/v4.6.4/css/ol.css" type="text/css">
     <!-- The line below is only needed for old environments like Internet Explorer and Android 4.x -->
@@ -21,7 +21,7 @@
       var caveEntranceLonLatMercator = ol.proj.fromLonLat(caveEntranceLonLat);
       var lambert = ol.proj.get('EPSG:31370');
       var webMercator = ol.proj.get('EPSG:3857');
-      var serviceUrl = 'http://geoservices.wallonie.be/arcgis/rest/services/' +
+      var serviceUrl = 'https://geoservices.wallonie.be/arcgis/rest/services/' +
           'SOL_SOUS_SOL/KARST/MapServer/';
       var layer = '4';
       var esrijsonFormat = new ol.format.EsriJSON();
@@ -46,9 +46,10 @@
         },
         text : new ol.style.Text({
           font: '12px Calibri,sans-serif',
-          fill: new ol.style.Fill({color: '#000'}),
-          stroke: new ol.style.Stroke({color: '#fff', width: 3}),
-          overflow: true
+          fill: new ol.style.Fill({color: 'black'}),
+          //stroke: new ol.style.Stroke({color: 'white', width: 1}),
+          overflow: true,
+          backgroundFill : new ol.style.Fill({color: 'orange'}),
         })
       });
 
@@ -104,7 +105,7 @@
       var raster = new ol.layer.Tile({
             source: new ol.source.XYZ({
               url: 'https://{a-c}.tile.thunderforest.com/outdoors/{z}/{x}/{y}.png' +
-                  '?apikey=ADD YOUR API KEY'
+                  '?apikey=4264c25de89a48e1a3fbcdb1533d89c0'
                           })
       });
       var map = new ol.Map({
@@ -115,33 +116,29 @@
           zoom: 16
         })
       });
-      var displayFeatureInfo = function(pixel) {
-        var features = [];
-        map.forEachFeatureAtPixel(pixel, function(feature) {
-          features.push(feature);
+
+      var overlay = new ol.Overlay({
+        element: document.getElementById('info'),
+        positioning: 'bottom-left'
         });
-        if (features.length > 0) {
-          var info = [];
-          var i, ii;
-          for (i = 0, ii = features.length; i < ii; ++i) {
-            info.push(features[i].get('DESCRIPTION'));
-          }
-          document.getElementById('info').innerHTML = info.join(', ') || '(unknown)';
-          map.getTarget().style.cursor = 'pointer';
-        } else {
-          document.getElementById('info').innerHTML = '&nbsp;';
-          map.getTarget().style.cursor = '';
-        }
-      };
+      overlay.setMap(map);
+
       map.on('pointermove', function(evt) {
-        if (evt.dragging) {
-          return;
-        }
-        var pixel = map.getEventPixel(evt.originalEvent);
-        displayFeatureInfo(pixel);
+        var feature = map.forEachFeatureAtPixel(evt.pixel, function(feature) {
+          overlay.setPosition(evt.coordinate);
+          overlay.getElement().innerHTML = feature.get('DESCRIPTION');
+          return feature;
+        });
+        overlay.getElement().style.display = feature ? '' : 'none';
+        document.body.style.cursor = feature ? 'pointer' : '';
       });
-      map.on('click', function(evt) {
-        displayFeatureInfo(evt.pixel);
+      
+      map.on('singleclick', function(evt) {
+          var base_url = "http://carto1.wallonie.be/fiches/?ctx=karst&srv=id&value=";
+          var feature = map.forEachFeatureAtPixel(evt.pixel, function(feature) {
+          return  feature.get('NUM_AKWA');
+          });
+          window.open( base_url.concat(feature) ); 
       });
     </script>
   </body>

@@ -116,11 +116,13 @@
       });
       
       map.on('singleclick', function(evt) {
-          var base_url = "http://carto1.wallonie.be/fiches/?ctx=karst&srv=id&value=";
-          var feature = map.forEachFeatureAtPixel(evt.pixel, function(feature) {
-          return  feature.get('NUM_AKWA');
-          });
-          window.open( base_url.concat(feature) ); 
+        map.forEachFeatureAtPixel(evt.pixel, function(feature,layer) {
+            var base_url = "http://carto1.wallonie.be/fiches/?ctx=karst&srv=id&value=";
+            var feature = map.forEachFeatureAtPixel(evt.pixel, function(feature) {
+            return  feature.get('NUM_AKWA');
+            });
+            window.open( base_url.concat(feature) ); 
+        });
       });
     </script>
   </body>

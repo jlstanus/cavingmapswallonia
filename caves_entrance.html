@@ -11,6 +11,24 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.4.4/proj4.js"></script>
     <!-- https://openlayers.org/en/latest/examples/vector-esri.html -->
     <!-- http://geoportail.wallonie.be/catalogue/ad5bc4d6-0c9e-4b4d-b606-2cba58ea55b2.html -->
+    <style>
+      .map:-moz-full-screen {
+        height: 100%;
+      }
+      .map:-webkit-full-screen {
+        height: 100%;
+      }
+      .map:-ms-fullscreen {
+        height: 100%;
+      }
+      .map:fullscreen {
+        height: 100%;
+      }
+      /* position the rotate control lower than usual */
+      .ol-rotate {
+        top: 3em;
+      }
+    </style>
   </head>
   <body>
     <div id="map" class="map"></div>
@@ -102,6 +120,8 @@
       var map = new ol.Map({
         layers: [raster, vector],
         target: document.getElementById('map'),
+        controls: ol.control.defaults().extend([new ol.control.FullScreen()]),
+        interactions: ol.interaction.defaults().extend([new ol.interaction.DragRotateAndZoom()]),
         view: new ol.View({
           center: caveEntranceLonLatMercator,
           zoom: 16
